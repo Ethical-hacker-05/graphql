@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./src/styles/main.css" />
   </head>
   <body>
+    <div class="bg-layer" aria-hidden="true"></div>
     <div id="app">
       <section id="login-view" class="card login-card">
         <h1>GraphQL</h1>
@@ -57,28 +58,38 @@
         </header>
 
         <main class="grid">
-          <article class="card">
-            <h3>Basic Information</h3>
-            <div id="basic-info" class="kv-list"></div>
-          </article>
+          <section class="card tabs-card span-2">
+            <div class="tab-buttons" role="tablist" aria-label="Profile data tabs">
+              <button class="tab-btn active" data-tab="user-tab" role="tab" aria-selected="true">
+                User Information
+              </button>
+              <button class="tab-btn" data-tab="xp-tab" role="tab" aria-selected="false">XP Amount</button>
+              <button class="tab-btn" data-tab="skills-tab" role="tab" aria-selected="false">Skills</button>
+            </div>
 
-          <article class="card">
-            <h3>XP Amount</h3>
-            <p id="total-xp" class="big-number">0</p>
-            <div id="xp-history" class="table-like"></div>
-          </article>
+            <article id="user-tab" class="tab-panel active" role="tabpanel">
+              <h3>User Information</h3>
+              <div id="basic-info" class="kv-list"></div>
+            </article>
 
-          <article class="card">
-            <h3>Skills</h3>
-            <div id="skills-summary" class="kv-list"></div>
-          </article>
+            <article id="xp-tab" class="tab-panel" role="tabpanel">
+              <h3>XP Amount</h3>
+              <p id="total-xp" class="big-number">0</p>
+              <div id="xp-history" class="table-like"></div>
+            </article>
+
+            <article id="skills-tab" class="tab-panel" role="tabpanel">
+              <h3>Skills</h3>
+              <div id="skills-summary" class="kv-list"></div>
+            </article>
+          </section>
 
           <article class="card span-2">
             <h3>Statistics</h3>
             <p class="muted">SVG graph 1: XP earned over time</p>
             <div id="xp-time-chart" class="chart"></div>
-            <p class="muted">SVG graph 2: Pass / Fail ratio</p>
-            <div id="pass-fail-chart" class="chart"></div>
+            <p class="muted">SVG graph 2: Audit ratio (given vs received)</p>
+            <div id="audit-ratio-chart" class="chart"></div>
             <p class="muted">SVG graph 3 (bonus): Top project XP</p>
             <div id="xp-project-chart" class="chart"></div>
           </article>

@@ -1,5 +1,5 @@
 import { clearSession, getSession, gqlRequest, saveSession, signIn } from "./api.js";
-import { renderPassFail, renderXpByProject, renderXpOverTime } from "./charts.js";
+import { renderAuditRatio, renderXpByProject, renderXpOverTime } from "./charts.js";
 
 const loginView = document.getElementById("login-view");
 const profileView = document.getElementById("profile-view");
@@ -17,8 +17,10 @@ const totalXp = document.getElementById("total-xp");
 const xpHistory = document.getElementById("xp-history");
 const skillsSummary = document.getElementById("skills-summary");
 const xpTimeChart = document.getElementById("xp-time-chart");
-const passFailChart = document.getElementById("pass-fail-chart");
+const auditRatioChart = document.getElementById("audit-ratio-chart");
 const xpProjectChart = document.getElementById("xp-project-chart");
+const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
 const QUERIES = {
   // Normal query
@@ -29,20 +31,6 @@ const QUERIES = {
         login
         attrs
         campus
-      }
-    }
-  `,
-  // Nested query
-  resultNested: `
-    query ResultsNested {
-      result(order_by: { createdAt: desc }, limit: 120) {
-        grade
-        createdAt
-        object {
-          id
-          name
-          type
-        }
       }
     }
   `,
@@ -70,6 +58,25 @@ const QUERIES = {
       }
     }
   `,
+  // Keep nested query usage for project requirements
+  auditByUserNested: `
+    query AuditByUserNested($userId: Int!) {
+      user(where: { id: { _eq: $userId } }) {
+        id
+        auditRatio
+      }
+    }
+  `,
+  auditTransactions: `
+    query AuditTransactions($userId: Int!) {
+      transaction(
+        where: { userId: { _eq: $userId }, type: { _in: ["up", "down"] } }
+      ) {
+        type
+        amount
+      }
+    }
+  `,
 };
 
 function formatXp(value) {
@@ -89,14 +96,44 @@ function parseEmail(attrs) {
   return attrs.email || "N/A";
 }
 
+function parseAttrs(attrs) {
+  if (!attrs) return null;
+  if (typeof attrs === "string") {
+    try {
+      return JSON.parse(attrs);
+    } catch {
+      return null;
+    }
+  }
+  return attrs;
+}
+
+function parseFullName(user) {
+  const attrs = parseAttrs(user.attrs);
+  if (!attrs) return user.login || "N/A";
+
+  if (typeof attrs.fullName === "string" && attrs.fullName.trim()) {
+    return attrs.fullName.trim();
+  }
+  if (typeof attrs.name === "string" && attrs.name.trim()) {
+    return attrs.name.trim();
+  }
+
+  const firstName = typeof attrs.firstName === "string" ? attrs.firstName.trim() : "";
+  const lastName = typeof attrs.lastName === "string" ? attrs.lastName.trim() : "";
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || user.login || "N/A";
+}
+
 function kvRow(label, value) {
   return `<div class="kv-row"><span class="muted">${label}</span><span>${value}</span></div>`;
 }
 
-function renderBasicUser(user) {
+function renderBasicUser(user, fullName) {
   basicInfo.innerHTML = [
+    kvRow("User's Full Name", fullName),
     kvRow("User ID", user.id),
-    kvRow("Login", user.login || "N/A"),
+    kvRow("Username", user.login || "N/A"),
     kvRow("Email", parseEmail(user.attrs)),
     kvRow("Campus", user.campus || "N/A"),
   ].join("");
@@ -149,10 +186,33 @@ function renderSkillsSection(skills) {
   skillsSummary.innerHTML = rows.length ? rows.join("") : "<p class='muted'>No skills found.</p>";
 }
 
-function renderResultStatsForGraph(results) {
-  const pass = results.filter((r) => Number(r.grade) >= 1).length;
-  const fail = results.filter((r) => Number(r.grade) < 1).length;
-  renderPassFail(passFailChart, pass, fail);
+function renderAuditGraph(auditTx) {
+  let given = 0;
+  let received = 0;
+  for (const tx of auditTx) {
+    const amount = Number(tx.amount || 0);
+    if (tx.type === "up") given += amount || 1;
+    if (tx.type === "down") received += amount || 1;
+  }
+  renderAuditRatio(auditRatioChart, given, received);
+}
+
+function activateTab(targetId) {
+  tabButtons.forEach((button) => {
+    const isActive = button.dataset.tab === targetId;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  tabPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.id === targetId);
+  });
+}
+
+function setupTabs() {
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => activateTab(button.dataset.tab));
+  });
 }
 
 async function loadProfile(session) {
@@ -164,12 +224,7 @@ async function loadProfile(session) {
   const me = meData.user?.[0];
   if (!me) throw new Error("No user data returned by API.");
 
-  const [resultsData, xpData, skillData] = await Promise.all([
-    gqlRequest({
-      domain: session.domain,
-      jwt: session.jwt,
-      query: QUERIES.resultNested,
-    }),
+  const [xpData, skillData, auditData] = await Promise.all([
     gqlRequest({
       domain: session.domain,
       jwt: session.jwt,
@@ -182,13 +237,27 @@ async function loadProfile(session) {
       query: QUERIES.skillByUser,
       variables: { userId: me.id },
     }),
+    gqlRequest({
+      domain: session.domain,
+      jwt: session.jwt,
+      query: QUERIES.auditTransactions,
+      variables: { userId: me.id },
+    }),
+    // Executes nested query type for requirement coverage
+    gqlRequest({
+      domain: session.domain,
+      jwt: session.jwt,
+      query: QUERIES.auditByUserNested,
+      variables: { userId: me.id },
+    }),
   ]);
 
-  welcome.textContent = `Welcome, ${me.login}`;
-  renderBasicUser(me);
+  const fullName = parseFullName(me);
+  welcome.textContent = `Welcome, ${fullName}`;
+  renderBasicUser(me, fullName);
   renderXpSection(xpData.transaction || []);
   renderSkillsSection(skillData.transaction || []);
-  renderResultStatsForGraph(resultsData.result || []);
+  renderAuditGraph(auditData.transaction || []);
   renderXpOverTime(xpTimeChart, xpData.transaction || []);
 }
 
@@ -211,6 +280,8 @@ function setLoginError(message) {
 showPasswordCheckbox.addEventListener("change", () => {
   passwordInput.type = showPasswordCheckbox.checked ? "text" : "password";
 });
+
+setupTabs();
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();

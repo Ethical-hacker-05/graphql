@@ -44,12 +44,19 @@ export function renderXpOverTime(container, transactions) {
     .join("");
 
   const content = `
+    <defs>
+      <linearGradient id="xpArea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#77a8ff" stop-opacity="0.30" />
+        <stop offset="100%" stop-color="#77a8ff" stop-opacity="0" />
+      </linearGradient>
+    </defs>
     <rect x="0" y="0" width="${width}" height="${height}" fill="transparent" />
     <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="#2f3a61"/>
     <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#2f3a61"/>
     ${axisLabel(6, pad + 4, `${max} XP`)}
     ${axisLabel(6, height - pad, "0 XP")}
     ${axisLabel(width - 86, height - 8, "Time ->")}
+    <polygon points="${pad},${height - pad} ${linePoints} ${width - pad},${height - pad}" fill="url(#xpArea)" />
     <polyline points="${linePoints}" fill="none" stroke="#77a8ff" stroke-width="2" />
     ${circles}
   `;
@@ -57,10 +64,10 @@ export function renderXpOverTime(container, transactions) {
   container.innerHTML = createSvg(width, height, content);
 }
 
-export function renderPassFail(container, passCount, failCount) {
-  const total = passCount + failCount;
+export function renderAuditRatio(container, givenAudits, receivedAudits) {
+  const total = givenAudits + receivedAudits;
   if (!total) {
-    container.innerHTML = "<p class='muted'>No result data found.</p>";
+    container.innerHTML = "<p class='muted'>No audit ratio data found.</p>";
     return;
   }
 
@@ -69,22 +76,24 @@ export function renderPassFail(container, passCount, failCount) {
   const cx = 95;
   const cy = 110;
   const radius = 66;
-  const passAngle = (passCount / total) * Math.PI * 2;
+  const givenAngle = (givenAudits / total) * Math.PI * 2;
 
-  const passX = cx + radius * Math.cos(passAngle - Math.PI / 2);
-  const passY = cy + radius * Math.sin(passAngle - Math.PI / 2);
-  const largeArc = passCount / total > 0.5 ? 1 : 0;
+  const givenX = cx + radius * Math.cos(givenAngle - Math.PI / 2);
+  const givenY = cy + radius * Math.sin(givenAngle - Math.PI / 2);
+  const largeArc = givenAudits / total > 0.5 ? 1 : 0;
 
-  const passPath = `M ${cx} ${cy - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${passX} ${passY} L ${cx} ${cy} Z`;
-  const failPath = `M ${passX} ${passY} A ${radius} ${radius} 0 ${largeArc ? 0 : 1} 1 ${cx} ${cy - radius} L ${cx} ${cy} Z`;
+  const givenPath = `M ${cx} ${cy - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${givenX} ${givenY} L ${cx} ${cy} Z`;
+  const receivedPath = `M ${givenX} ${givenY} A ${radius} ${radius} 0 ${largeArc ? 0 : 1} 1 ${cx} ${cy - radius} L ${cx} ${cy} Z`;
+  const ratio = receivedAudits ? (givenAudits / receivedAudits).toFixed(2) : "N/A";
 
   const content = `
-    <path d="${passPath}" fill="#50d890"><title>Pass: ${passCount}</title></path>
-    <path d="${failPath}" fill="#ff6b7f"><title>Fail: ${failCount}</title></path>
+    <path d="${givenPath}" fill="#50d890"><title>Given audits: ${givenAudits}</title></path>
+    <path d="${receivedPath}" fill="#ff6b7f"><title>Received audits: ${receivedAudits}</title></path>
     <circle cx="${cx}" cy="${cy}" r="32" fill="#161d33"></circle>
-    <text x="${188}" y="${86}" fill="#ecf0ff" font-size="14">Pass: ${passCount}</text>
-    <text x="${188}" y="${116}" fill="#ecf0ff" font-size="14">Fail: ${failCount}</text>
-    <text x="${188}" y="${146}" fill="#a7b0cc" font-size="12">${Math.round((passCount / total) * 100)}% pass rate</text>
+    <text x="${188}" y="${76}" fill="#ecf0ff" font-size="14">Given: ${givenAudits}</text>
+    <text x="${188}" y="${104}" fill="#ecf0ff" font-size="14">Received: ${receivedAudits}</text>
+    <text x="${188}" y="${132}" fill="#a7b0cc" font-size="12">Given/Received: ${ratio}</text>
+    <text x="${188}" y="${156}" fill="#a7b0cc" font-size="12">${Math.round((givenAudits / total) * 100)}% share given</text>
   `;
 
   container.innerHTML = createSvg(width, height, content);
