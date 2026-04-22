@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphQL Profile</title>
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <div id="app">
+      <section id="login-view" class="card">
+        <h1>GraphQL Profile</h1>
+        <p class="muted">
+          Sign in with <strong>username:password</strong> or
+          <strong>email:password</strong>
+        </p>
+        <form id="login-form" novalidate>
+          <label for="identifier">Username or Email</label>
+          <input id="identifier" name="identifier" type="text" autocomplete="username" required />
+
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <label for="domain">Domain</label>
+          <input
+            id="domain"
+            name="domain"
+            type="text"
+            placeholder="learn.reboot01.com"
+            required
+          />
+
+          <button type="submit">Sign in</button>
+          <p id="login-error" class="error" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="profile-view" class="hidden">
+        <header class="topbar card">
+          <div>
+            <h2 id="welcome">Welcome</h2>
+            <p class="muted">Your journey and achievements overview</p>
+          </div>
+          <button id="logout-btn" class="secondary">Logout</button>
+        </header>
+
+        <main class="grid">
+          <article class="card">
+            <h3>Basic Information</h3>
+            <div id="basic-info" class="kv-list"></div>
+          </article>
+
+          <article class="card">
+            <h3>XP Overview</h3>
+            <p id="total-xp" class="big-number">0</p>
+            <div id="xp-by-project" class="table-like"></div>
+          </article>
+
+          <article class="card">
+            <h3>Results & Grades</h3>
+            <div id="results-summary" class="kv-list"></div>
+          </article>
+
+          <article class="card span-2">
+            <h3>Statistics</h3>
+            <p class="muted">SVG graph 1: XP earned over time</p>
+            <div id="xp-time-chart" class="chart"></div>
+            <p class="muted">SVG graph 2: Pass / Fail ratio</p>
+            <div id="pass-fail-chart" class="chart"></div>
+            <p class="muted">SVG graph 3 (bonus): Top project XP</p>
+            <div id="xp-project-chart" class="chart"></div>
+          </article>
+        </main>
+      </section>
+    </div>
+
+    <script type="module" src="./src/js/main.js"></script>
+  </body>
+</html>
