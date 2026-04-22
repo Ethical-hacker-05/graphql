@@ -3,6 +3,7 @@ import { renderPassFail, renderXpByProject, renderXpOverTime } from "./charts.js
 
 const loginView = document.getElementById("login-view");
 const profileView = document.getElementById("profile-view");
+const appRoot = document.getElementById("app");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout-btn");
@@ -13,8 +14,8 @@ const showPasswordCheckbox = document.getElementById("show-password");
 const welcome = document.getElementById("welcome");
 const basicInfo = document.getElementById("basic-info");
 const totalXp = document.getElementById("total-xp");
-const xpByProject = document.getElementById("xp-by-project");
-const resultsSummary = document.getElementById("results-summary");
+const xpHistory = document.getElementById("xp-history");
+const skillsSummary = document.getElementById("skills-summary");
 const xpTimeChart = document.getElementById("xp-time-chart");
 const passFailChart = document.getElementById("pass-fail-chart");
 const xpProjectChart = document.getElementById("xp-project-chart");
@@ -58,6 +59,17 @@ const QUERIES = {
       }
     }
   `,
+  skillByUser: `
+    query SkillByUser($userId: Int!) {
+      transaction(
+        where: { userId: { _eq: $userId }, type: { _like: "skill_%" } }
+        order_by: { amount: desc }
+      ) {
+        type
+        amount
+      }
+    }
+  `,
 };
 
 function formatXp(value) {
@@ -94,42 +106,52 @@ function renderXpSection(transactions) {
   const total = transactions.reduce((sum, tx) => sum + tx.amount, 0);
   totalXp.textContent = formatXp(total);
 
-  const grouped = transactions.reduce((acc, tx) => {
+  const groupedByProject = transactions.reduce((acc, tx) => {
     const parts = tx.path.split("/").filter(Boolean);
     const project = parts.at(-1) || "unknown-project";
     acc[project] = (acc[project] || 0) + tx.amount;
     return acc;
   }, {});
 
-  const rows = Object.entries(grouped)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([project, xp]) => {
-      return `<div class="table-row"><span>${project}</span><strong>${formatXp(xp)}</strong></div>`;
+  const historyRows = [...transactions]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((tx) => {
+      const date = new Date(tx.createdAt).toLocaleDateString();
+      return `<div class="table-row"><span>${tx.path}</span><strong>${formatXp(tx.amount)} · ${date}</strong></div>`;
     });
 
-  xpByProject.innerHTML = rows.length ? rows.join("") : "<p class='muted'>No project XP data.</p>";
-  const projectGraphData = Object.entries(grouped)
+  xpHistory.innerHTML = historyRows.length
+    ? historyRows.join("")
+    : "<p class='muted'>No XP history found.</p>";
+
+  const projectGraphData = Object.entries(groupedByProject)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([project, xp]) => ({ project, xp }));
   renderXpByProject(xpProjectChart, projectGraphData);
 }
 
-function renderResultsSection(results) {
+function renderSkillsSection(skills) {
+  const grouped = skills.reduce((acc, skill) => {
+    const label = String(skill.type || "")
+      .replace(/^skill_/, "")
+      .replace(/_/g, " ")
+      .trim();
+    if (!label) return acc;
+    acc[label] = Math.max(acc[label] || 0, Number(skill.amount || 0));
+    return acc;
+  }, {});
+
+  const rows = Object.entries(grouped)
+    .sort((a, b) => b[1] - a[1])
+    .map(([skill, amount]) => kvRow(skill, `${amount}`));
+
+  skillsSummary.innerHTML = rows.length ? rows.join("") : "<p class='muted'>No skills found.</p>";
+}
+
+function renderResultStatsForGraph(results) {
   const pass = results.filter((r) => Number(r.grade) >= 1).length;
   const fail = results.filter((r) => Number(r.grade) < 1).length;
-  const avg = results.length
-    ? (results.reduce((sum, r) => sum + Number(r.grade || 0), 0) / results.length).toFixed(2)
-    : "0.00";
-
-  resultsSummary.innerHTML = [
-    kvRow("Total results", results.length),
-    kvRow("Passed", pass),
-    kvRow("Failed", fail),
-    kvRow("Average grade", avg),
-  ].join("");
-
   renderPassFail(passFailChart, pass, fail);
 }
 
@@ -142,7 +164,7 @@ async function loadProfile(session) {
   const me = meData.user?.[0];
   if (!me) throw new Error("No user data returned by API.");
 
-  const [resultsData, xpData] = await Promise.all([
+  const [resultsData, xpData, skillData] = await Promise.all([
     gqlRequest({
       domain: session.domain,
       jwt: session.jwt,
@@ -154,21 +176,30 @@ async function loadProfile(session) {
       query: QUERIES.xpByUser,
       variables: { userId: me.id },
     }),
+    gqlRequest({
+      domain: session.domain,
+      jwt: session.jwt,
+      query: QUERIES.skillByUser,
+      variables: { userId: me.id },
+    }),
   ]);
 
   welcome.textContent = `Welcome, ${me.login}`;
   renderBasicUser(me);
   renderXpSection(xpData.transaction || []);
-  renderResultsSection(resultsData.result || []);
+  renderSkillsSection(skillData.transaction || []);
+  renderResultStatsForGraph(resultsData.result || []);
   renderXpOverTime(xpTimeChart, xpData.transaction || []);
 }
 
 function showLogin() {
+  appRoot.classList.remove("dashboard-mode");
   loginView.classList.remove("hidden");
   profileView.classList.add("hidden");
 }
 
 function showProfile() {
+  appRoot.classList.add("dashboard-mode");
   loginView.classList.add("hidden");
   profileView.classList.remove("hidden");
 }

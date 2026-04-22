@@ -20,6 +20,28 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   background: radial-gradient(circle at top right, #1c2850, var(--bg) 40%);
   color: var(--text);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  background: radial-gradient(circle at 15% 20%, rgb(76 154 255 / 18%), transparent 40%),
+    radial-gradient(circle at 75% 30%, rgb(44 207 139 / 14%), transparent 42%),
+    radial-gradient(circle at 45% 85%, rgb(255 90 110 / 12%), transparent 38%);
+  animation: drift 24s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, 1%, 0) scale(1.06);
+  }
 }
 
 #app {
@@ -27,6 +49,18 @@ body {
   padding: 32px 20px 40px;
   max-width: 1180px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dashboard-mode {
+  justify-content: flex-start !important;
+}
+
+.login-card {
+  width: min(100%, 480px);
+  margin: auto;
 }
 
 .card {
@@ -63,6 +97,12 @@ label {
   margin-bottom: 6px;
 }
 
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 input {
   width: 100%;
   border: 1px solid var(--border);
@@ -85,6 +125,11 @@ button:focus-visible {
   margin-top: 8px;
 }
 
+.inline-option.right {
+  white-space: nowrap;
+  margin-top: 0;
+}
+
 .inline-option input {
   width: auto;
   margin: 0;
@@ -101,6 +146,11 @@ button {
   cursor: pointer;
   transition: transform 120ms ease, background 120ms ease;
   will-change: transform;
+}
+
+.signin-wrap {
+  display: flex;
+  justify-content: center;
 }
 
 button:hover {
@@ -147,6 +197,7 @@ button.secondary {
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .span-2 {
@@ -175,7 +226,7 @@ button.secondary {
 .table-like {
   display: grid;
   gap: 8px;
-  max-height: 220px;
+  max-height: 340px;
   overflow: auto;
 }
 
@@ -209,5 +260,11 @@ svg {
 
   .span-2 {
     grid-column: span 1;
+  }
+
+  .password-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
   }
 }
