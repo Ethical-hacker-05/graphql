@@ -107,24 +107,28 @@ export function renderXpByProject(container, projectRows) {
 
   const rows = projectRows;
   const width = 760;
-  const barHeight = 18;
-  const rowGap = 14;
-  const labelGap = 6;
+  const barHeight = 20;
+  const rowGap = 12;
   const topPad = 16;
-  const labelWidth = 300;
-  const leftPad = labelWidth + 20;
+  const longestNameLength = rows.reduce((maxLen, row) => {
+    return Math.max(maxLen, String(row.project || "").length);
+  }, 0);
+  // Approximate label width using average glyph width at font-size 11
+  const labelWidth = Math.min(380, Math.max(120, Math.round(longestNameLength * 6.5)));
+  const gap = 10;
+  const leftPad = labelWidth + gap;
   const rightPad = 100;
   const max = Math.max(...rows.map((row) => row.xp), 1);
-  const rowBlock = barHeight + rowGap + labelGap + 10;
-  const height = topPad + rows.length * rowBlock + 10;
+  const rowBlock = barHeight + rowGap;
+  const height = topPad + rows.length * rowBlock + 12;
   const maxBarWidth = width - leftPad - rightPad;
 
   const bars = rows
     .map((row, index) => {
-      const y = topPad + index * rowBlock + 12;
+      const y = topPad + index * rowBlock;
       const barWidth = Math.max(2, (row.xp / max) * maxBarWidth);
       const valueX = Math.min(leftPad + barWidth + 8, width - rightPad + 8);
-      const labelY = y - labelGap;
+      const labelY = y + 14;
       return `
         <text x="8" y="${labelY}" fill="#a7b0cc" font-size="10">
           <title>${row.project}</title>${row.project}
@@ -132,7 +136,7 @@ export function renderXpByProject(container, projectRows) {
         <rect x="${leftPad}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6" fill="#77a8ff">
           <title>${row.project}: ${row.xp} XP</title>
         </rect>
-        <text x="${valueX}" y="${y + 13}" fill="#ecf0ff" font-size="10">${row.xp} XP</text>
+        <text x="${valueX}" y="${y + 14}" fill="#ecf0ff" font-size="10">${row.xp} XP</text>
       `;
     })
     .join("");
