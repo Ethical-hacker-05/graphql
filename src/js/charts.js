@@ -84,7 +84,7 @@ export function renderAuditRatio(container, givenAudits, receivedAudits) {
 
   const givenPath = `M ${cx} ${cy - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${givenX} ${givenY} L ${cx} ${cy} Z`;
   const receivedPath = `M ${givenX} ${givenY} A ${radius} ${radius} 0 ${largeArc ? 0 : 1} 1 ${cx} ${cy - radius} L ${cx} ${cy} Z`;
-  const ratio = receivedAudits ? (givenAudits / receivedAudits).toFixed(2) : "N/A";
+  const ratio = receivedAudits ? (givenAudits / receivedAudits).toFixed(1) : "N/A";
 
   const content = `
     <path d="${givenPath}" fill="#50d890"><title>Given audits: ${givenAudits}</title></path>
@@ -92,7 +92,7 @@ export function renderAuditRatio(container, givenAudits, receivedAudits) {
     <circle cx="${cx}" cy="${cy}" r="26" fill="#161d33"></circle>
     <text x="${146}" y="${70}" fill="#ecf0ff" font-size="12">Given: ${givenAudits}</text>
     <text x="${146}" y="${93}" fill="#ecf0ff" font-size="12">Received: ${receivedAudits}</text>
-    <text x="${146}" y="${116}" fill="#a7b0cc" font-size="11">Given/Received: ${ratio}</text>
+    <text x="${146}" y="${116}" fill="#a7b0cc" font-size="11">Audit Ratio: ${ratio}</text>
     <text x="${146}" y="${138}" fill="#a7b0cc" font-size="11">${Math.round((givenAudits / total) * 100)}% share given</text>
   `;
 
