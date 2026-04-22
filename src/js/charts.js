@@ -6,12 +6,6 @@ function axisLabel(x, y, text) {
   return `<text x="${x}" y="${y}" fill="#a7b0cc" font-size="10">${text}</text>`;
 }
 
-function truncateLabel(text, maxLength = 26) {
-  const value = String(text || "");
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1)}…`;
-}
-
 export function renderXpOverTime(container, transactions) {
   if (!transactions.length) {
     container.innerHTML = "<p class='muted'>No XP data found.</p>";
@@ -113,30 +107,31 @@ export function renderXpByProject(container, projectRows) {
 
   const rows = projectRows;
   const width = 760;
-  const barHeight = 22;
-  const rowGap = 10;
+  const barHeight = 18;
+  const rowGap = 16;
   const topPad = 16;
-  const labelWidth = 210;
+  const labelWidth = 300;
   const leftPad = labelWidth + 20;
-  const rightPad = 130;
+  const rightPad = 100;
   const max = Math.max(...rows.map((row) => row.xp), 1);
-  const height = topPad + rows.length * (barHeight + rowGap) + 12;
+  const rowBlock = barHeight + rowGap + 14;
+  const height = topPad + rows.length * rowBlock + 10;
   const maxBarWidth = width - leftPad - rightPad;
 
   const bars = rows
     .map((row, index) => {
-      const y = topPad + index * (barHeight + rowGap);
+      const y = topPad + index * rowBlock + 14;
       const barWidth = Math.max(2, (row.xp / max) * maxBarWidth);
       const valueX = Math.min(leftPad + barWidth + 8, width - rightPad + 8);
-      const label = truncateLabel(row.project);
+      const labelY = y - 4;
       return `
-        <text x="8" y="${y + 15}" fill="#a7b0cc" font-size="11">
-          <title>${row.project}</title>${label}
+        <text x="8" y="${labelY}" fill="#a7b0cc" font-size="10">
+          <title>${row.project}</title>${row.project}
         </text>
         <rect x="${leftPad}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6" fill="#77a8ff">
           <title>${row.project}: ${row.xp} XP</title>
         </rect>
-        <text x="${valueX}" y="${y + 15}" fill="#ecf0ff" font-size="11">${row.xp} XP</text>
+        <text x="${valueX}" y="${y + 13}" fill="#ecf0ff" font-size="10">${row.xp} XP</text>
       `;
     })
     .join("");

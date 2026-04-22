@@ -155,7 +155,14 @@ function renderXpSection(transactions) {
   const groupedByProject = projectOnlyTransactions.reduce((acc, tx) => {
     const project =
       tx.object?.name || tx.path.split("/").filter(Boolean).at(-1) || "unknown-project";
-    acc[project] = (acc[project] || 0) + tx.amount;
+    const createdAt = new Date(tx.createdAt).getTime();
+    const current = acc[project];
+    if (!current) {
+      acc[project] = { xp: tx.amount, submittedAt: createdAt };
+      return acc;
+    }
+    current.xp += tx.amount;
+    current.submittedAt = Math.min(current.submittedAt, createdAt);
     return acc;
   }, {});
 
@@ -171,8 +178,8 @@ function renderXpSection(transactions) {
     : "<p class='muted'>No XP history found.</p>";
 
   const projectGraphData = Object.entries(groupedByProject)
-    .sort((a, b) => b[1] - a[1])
-    .map(([project, xp]) => ({ project, xp }));
+    .map(([project, info]) => ({ project, xp: info.xp, submittedAt: info.submittedAt }))
+    .sort((a, b) => a.submittedAt - b.submittedAt);
   renderXpByProject(xpProjectChart, projectGraphData);
 }
 
