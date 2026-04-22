@@ -345,6 +345,12 @@ button.secondary {
   overflow-x: auto;
 }
 
+#xp-project-chart {
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .chart:hover {
   border-color: #4f84f0;
   box-shadow: 0 0 0 1px rgb(79 132 240 / 25%);
