@@ -22,9 +22,9 @@ export function renderXpOverTime(container, transactions) {
     return { date: new Date(item.createdAt), value: cumulative };
   });
 
-  const width = 760;
-  const height = 260;
-  const pad = 34;
+  const width = 700;
+  const height = 220;
+  const pad = 32;
   const max = Math.max(...points.map((p) => p.value), 1);
 
   const linePoints = points
@@ -39,7 +39,7 @@ export function renderXpOverTime(container, transactions) {
     .map((point, index) => {
       const x = pad + (index / Math.max(points.length - 1, 1)) * (width - pad * 2);
       const y = height - pad - (point.value / max) * (height - pad * 2);
-      return `<circle cx="${x}" cy="${y}" r="3" fill="#77a8ff"><title>${point.value} XP</title></circle>`;
+      return `<circle cx="${x}" cy="${y}" r="2.4" fill="#77a8ff"><title>${point.value} XP</title></circle>`;
     })
     .join("");
 
@@ -57,7 +57,7 @@ export function renderXpOverTime(container, transactions) {
     ${axisLabel(6, height - pad, "0 XP")}
     ${axisLabel(width - 86, height - 8, "Time ->")}
     <polygon points="${pad},${height - pad} ${linePoints} ${width - pad},${height - pad}" fill="url(#xpArea)" />
-    <polyline points="${linePoints}" fill="none" stroke="#77a8ff" stroke-width="2" />
+    <polyline points="${linePoints}" fill="none" stroke="#77a8ff" stroke-width="1.5" />
     ${circles}
   `;
 
@@ -71,11 +71,11 @@ export function renderAuditRatio(container, givenAudits, receivedAudits) {
     return;
   }
 
-  const width = 340;
-  const height = 220;
-  const cx = 95;
-  const cy = 110;
-  const radius = 66;
+  const width = 300;
+  const height = 190;
+  const cx = 72;
+  const cy = 95;
+  const radius = 54;
   const givenAngle = (givenAudits / total) * Math.PI * 2;
 
   const givenX = cx + radius * Math.cos(givenAngle - Math.PI / 2);
@@ -89,11 +89,11 @@ export function renderAuditRatio(container, givenAudits, receivedAudits) {
   const content = `
     <path d="${givenPath}" fill="#50d890"><title>Given audits: ${givenAudits}</title></path>
     <path d="${receivedPath}" fill="#ff6b7f"><title>Received audits: ${receivedAudits}</title></path>
-    <circle cx="${cx}" cy="${cy}" r="32" fill="#161d33"></circle>
-    <text x="${188}" y="${76}" fill="#ecf0ff" font-size="14">Given: ${givenAudits}</text>
-    <text x="${188}" y="${104}" fill="#ecf0ff" font-size="14">Received: ${receivedAudits}</text>
-    <text x="${188}" y="${132}" fill="#a7b0cc" font-size="12">Given/Received: ${ratio}</text>
-    <text x="${188}" y="${156}" fill="#a7b0cc" font-size="12">${Math.round((givenAudits / total) * 100)}% share given</text>
+    <circle cx="${cx}" cy="${cy}" r="26" fill="#161d33"></circle>
+    <text x="${146}" y="${70}" fill="#ecf0ff" font-size="12">Given: ${givenAudits}</text>
+    <text x="${146}" y="${93}" fill="#ecf0ff" font-size="12">Received: ${receivedAudits}</text>
+    <text x="${146}" y="${116}" fill="#a7b0cc" font-size="11">Given/Received: ${ratio}</text>
+    <text x="${146}" y="${138}" fill="#a7b0cc" font-size="11">${Math.round((givenAudits / total) * 100)}% share given</text>
   `;
 
   container.innerHTML = createSvg(width, height, content);
@@ -105,7 +105,7 @@ export function renderXpByProject(container, projectRows) {
     return;
   }
 
-  const rows = projectRows.slice(0, 8);
+  const rows = projectRows.slice(0, 20);
   const width = 760;
   const barHeight = 22;
   const rowGap = 10;

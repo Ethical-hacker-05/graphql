@@ -44,6 +44,10 @@ const QUERIES = {
         amount
         path
         createdAt
+        object {
+          name
+          type
+        }
       }
     }
   `,
@@ -143,9 +147,14 @@ function renderXpSection(transactions) {
   const total = transactions.reduce((sum, tx) => sum + tx.amount, 0);
   totalXp.textContent = formatXp(total);
 
-  const groupedByProject = transactions.reduce((acc, tx) => {
-    const parts = tx.path.split("/").filter(Boolean);
-    const project = parts.at(-1) || "unknown-project";
+  const projectOnlyTransactions = transactions.filter((tx) => {
+    if (tx.object?.type) return tx.object.type === "project";
+    return !tx.path.includes("/exercise/");
+  });
+
+  const groupedByProject = projectOnlyTransactions.reduce((acc, tx) => {
+    const project =
+      tx.object?.name || tx.path.split("/").filter(Boolean).at(-1) || "unknown-project";
     acc[project] = (acc[project] || 0) + tx.amount;
     return acc;
   }, {});
@@ -163,7 +172,6 @@ function renderXpSection(transactions) {
 
   const projectGraphData = Object.entries(groupedByProject)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
     .map(([project, xp]) => ({ project, xp }));
   renderXpByProject(xpProjectChart, projectGraphData);
 }
