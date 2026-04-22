@@ -6,6 +6,9 @@ const profileView = document.getElementById("profile-view");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout-btn");
+const refreshBtn = document.getElementById("refresh-btn");
+const passwordInput = document.getElementById("password");
+const showPasswordCheckbox = document.getElementById("show-password");
 
 const welcome = document.getElementById("welcome");
 const basicInfo = document.getElementById("basic-info");
@@ -174,6 +177,10 @@ function setLoginError(message) {
   loginError.textContent = message || "";
 }
 
+showPasswordCheckbox.addEventListener("change", () => {
+  passwordInput.type = showPasswordCheckbox.checked ? "text" : "password";
+});
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   setLoginError("");
@@ -212,6 +219,23 @@ loginForm.addEventListener("submit", async (event) => {
 logoutBtn.addEventListener("click", () => {
   clearSession();
   showLogin();
+});
+
+refreshBtn.addEventListener("click", async () => {
+  const session = getSession();
+  if (!session) return;
+
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = "Refreshing...";
+  try {
+    await loadProfile(session);
+  } catch {
+    clearSession();
+    showLogin();
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Refresh Data";
+  }
 });
 
 async function bootstrap() {

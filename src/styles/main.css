@@ -1,8 +1,8 @@
 :root {  
   color-scheme: dark;
-  --bg: #0b1020;
-  --panel: #161d33;
-  --panel-soft: #1f2742;
+  --bg: #141a2b;
+  --panel: #1d2438;
+  --panel-soft: #26304a;
   --text: #ecf0ff;
   --muted: #a7b0cc;
   --primary: #77a8ff;
@@ -24,16 +24,16 @@ body {
 
 #app {
   min-height: 100vh;
-  padding: 24px;
-  max-width: 1100px;
+  padding: 32px 20px 40px;
+  max-width: 1180px;
   margin: 0 auto;
 }
 
 .card {
   background: color-mix(in srgb, var(--panel) 94%, white);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 20px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
 }
 
@@ -42,7 +42,19 @@ body {
 }
 
 h1, h2, h3 {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+h3 {
+  font-size: 1.15rem;
 }
 
 label {
@@ -58,6 +70,24 @@ input {
   background: var(--panel-soft);
   color: var(--text);
   padding: 10px 12px;
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #9ec0ff;
+  outline-offset: 2px;
+}
+
+.inline-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.inline-option input {
+  width: auto;
+  margin: 0;
 }
 
 button {
@@ -103,12 +133,19 @@ button.secondary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #1a2340, #1d2438);
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -153,11 +190,11 @@ button.secondary {
 }
 
 .chart {
-  margin: 10px 0 16px;
+  margin: 12px 0 18px;
   background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 12px;
+  padding: 10px;
 }
 
 svg {

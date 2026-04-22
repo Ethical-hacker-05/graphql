@@ -20,6 +20,10 @@
 
           <label for="password">Password</label>
           <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <label class="inline-option" for="show-password">
+            <input id="show-password" type="checkbox" />
+            Show password
+          </label>
 
           <label for="domain">Domain</label>
           <input
@@ -27,6 +31,7 @@
             name="domain"
             type="text"
             placeholder="learn.reboot01.com"
+            value="learn.reboot01.com"
             required
           />
 
@@ -41,7 +46,10 @@
             <h2 id="welcome">Welcome</h2>
             <p class="muted">Your journey and achievements overview</p>
           </div>
-          <button id="logout-btn" class="secondary">Logout</button>
+          <div class="top-actions">
+            <button id="refresh-btn" class="secondary">Refresh Data</button>
+            <button id="logout-btn" class="secondary">Logout</button>
+          </div>
         </header>
 
         <main class="grid">
