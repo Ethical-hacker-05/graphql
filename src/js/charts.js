@@ -108,22 +108,23 @@ export function renderXpByProject(container, projectRows) {
   const rows = projectRows;
   const width = 760;
   const barHeight = 18;
-  const rowGap = 16;
+  const rowGap = 14;
+  const labelGap = 6;
   const topPad = 16;
   const labelWidth = 300;
   const leftPad = labelWidth + 20;
   const rightPad = 100;
   const max = Math.max(...rows.map((row) => row.xp), 1);
-  const rowBlock = barHeight + rowGap + 14;
+  const rowBlock = barHeight + rowGap + labelGap + 10;
   const height = topPad + rows.length * rowBlock + 10;
   const maxBarWidth = width - leftPad - rightPad;
 
   const bars = rows
     .map((row, index) => {
-      const y = topPad + index * rowBlock + 14;
+      const y = topPad + index * rowBlock + 12;
       const barWidth = Math.max(2, (row.xp / max) * maxBarWidth);
       const valueX = Math.min(leftPad + barWidth + 8, width - rightPad + 8);
-      const labelY = y - 4;
+      const labelY = y - labelGap;
       return `
         <text x="8" y="${labelY}" fill="#a7b0cc" font-size="10">
           <title>${row.project}</title>${row.project}

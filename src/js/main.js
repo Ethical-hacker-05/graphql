@@ -179,7 +179,7 @@ function renderXpSection(transactions) {
 
   const projectGraphData = Object.entries(groupedByProject)
     .map(([project, info]) => ({ project, xp: info.xp, submittedAt: info.submittedAt }))
-    .sort((a, b) => a.submittedAt - b.submittedAt);
+    .sort((a, b) => b.submittedAt - a.submittedAt);
   renderXpByProject(xpProjectChart, projectGraphData);
 }
 
