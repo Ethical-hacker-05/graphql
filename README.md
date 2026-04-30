@@ -10,6 +10,10 @@ A complete profile page app using the school GraphQL API:
   - Pass / Fail ratio
 - Logout support
 
+## Hosted on Github
+
+[https://ethical-hacker-05.github.io/graphql/](https://ethical-hacker-05.github.io/graphql/)
+
 ## Run locally
 
 This project is static HTML/CSS/JS with no build step.
