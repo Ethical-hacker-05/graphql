@@ -102,6 +102,25 @@ body::after {
 .login-card {
   width: min(100%, 480px);
   margin: auto;
+  text-align: center;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+#login-form {
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  gap: 10px;
+}
+
+#login-form label {
+  text-align: left;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b9c2de;
 }
 
 .card {
@@ -146,9 +165,13 @@ label {
 }
 
 .password-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  position: relative;
+  display: block;
+}
+
+.password-row input {
+  flex: 1;
+  padding-right: 46px;
 }
 
 input {
@@ -166,21 +189,27 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-.inline-option {
+.icon-btn {
+  margin: 0;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  justify-content: center;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: #d2bc70;
+  padding: 0;
+  flex-shrink: 0;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-.inline-option.right {
-  white-space: nowrap;
-  margin-top: 0;
-}
-
-.inline-option input {
-  width: auto;
-  margin: 0;
+.icon-btn:hover {
+  background: rgb(255 255 255 / 8%);
 }
 
 button {
@@ -199,6 +228,12 @@ button {
 .signin-wrap {
   display: flex;
   justify-content: center;
+}
+
+.fixed-domain {
+  margin-top: 6px;
+  margin-bottom: 4px;
+  text-align: left;
 }
 
 button:hover {
@@ -233,6 +268,8 @@ button.secondary {
   align-items: center;
   margin-bottom: 20px;
   background: linear-gradient(135deg, #1a2340, #1d2438);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .top-actions {
@@ -311,6 +348,8 @@ button.secondary {
   gap: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+  align-items: baseline;
+  flex-wrap: wrap;
 }
 
 .big-number {
@@ -334,6 +373,13 @@ button.secondary {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
+  align-items: start;
+}
+
+.table-row span,
+.table-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .chart {
@@ -362,6 +408,20 @@ svg {
   height: auto;
 }
 
+@media (max-width: 1024px) {
+  #app {
+    padding: 24px 14px 32px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+}
+
 @media (max-width: 860px) {
   .grid {
     grid-template-columns: 1fr;
@@ -375,9 +435,150 @@ svg {
     justify-content: center;
   }
 
-  .password-row {
+  .tab-btn {
+    flex: 1 1 180px;
+  }
+
+  .topbar {
     align-items: flex-start;
+  }
+
+  .top-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .password-row {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+  }
+
+  #app {
+    padding: 16px 10px 24px;
+  }
+
+  .card {
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .tab-btn {
+    flex: 1 1 100%;
+  }
+
+  .tab-panel {
+    width: 100%;
+  }
+
+  .kv-list {
+    width: 100%;
+  }
+
+  .kv-row {
     flex-direction: column;
+    gap: 4px;
+  }
+
+  .table-row {
+    grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .chart {
+    padding: 8px;
+    margin: 10px 0 14px;
+  }
+
+  .top-actions {
+    justify-content: stretch;
+  }
+
+  .top-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+/* Very narrow screens: shrink UI instead of forcing wide layout */
+@media (max-width: 280px) {
+  #app {
+    padding: 8px 6px 14px;
+  }
+
+  .login-card {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  #login-form {
+    width: 100%;
+    max-width: none;
+    gap: 6px;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+
+  #login-form label {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+  }
+
+  input {
+    font-size: 0.72rem;
+    padding: 7px 8px;
+    border-radius: 8px;
+  }
+
+  .password-row input {
+    padding-right: 34px;
+  }
+
+  .icon-btn {
+    width: 22px;
+    height: 22px;
+    right: 6px;
+    font-size: 0.7rem;
+  }
+
+  .fixed-domain {
+    font-size: 0.62rem;
+    margin-top: 4px;
+  }
+
+  .signin-wrap button {
+    margin-top: 8px;
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    border-radius: 8px;
+  }
+
+  .error {
+    font-size: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

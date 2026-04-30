@@ -22,21 +22,21 @@
           <label for="password">Password</label>
           <div class="password-row">
             <input id="password" name="password" type="password" autocomplete="current-password" required />
-            <label class="inline-option right" for="show-password">
-              <input id="show-password" type="checkbox" />
-              Show
-            </label>
+            <button
+              id="toggle-password"
+              type="button"
+              class="icon-btn"
+              aria-label="Show password"
+              title="Show password"
+            >
+              <span id="password-eye" aria-hidden="true">👁</span>
+            </button>
           </div>
 
-          <label for="domain">Domain</label>
-          <input
-            id="domain"
-            name="domain"
-            type="text"
-            placeholder="learn.reboot01.com"
-            value="learn.reboot01.com"
-            required
-          />
+          <p class="fixed-domain muted">
+            Domain: <strong>learn.reboot01.com</strong>
+          </p>
+          <input id="domain" name="domain" type="hidden" value="learn.reboot01.com" />
 
           <div class="signin-wrap">
             <button type="submit">Sign in</button>

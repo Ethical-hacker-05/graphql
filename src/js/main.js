@@ -9,7 +9,8 @@ const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout-btn");
 const refreshBtn = document.getElementById("refresh-btn");
 const passwordInput = document.getElementById("password");
-const showPasswordCheckbox = document.getElementById("show-password");
+const togglePasswordBtn = document.getElementById("toggle-password");
+const passwordEye = document.getElementById("password-eye");
 
 const welcome = document.getElementById("welcome");
 const basicInfo = document.getElementById("basic-info");
@@ -62,7 +63,7 @@ const QUERIES = {
       }
     }
   `,
-  // Keep nested query usage for project requirements
+  // Keep nested query
   auditByUserNested: `
     query AuditByUserNested($userId: Int!) {
       user(where: { id: { _eq: $userId } }) {
@@ -258,7 +259,7 @@ async function loadProfile(session) {
       query: QUERIES.auditTransactions,
       variables: { userId: me.id },
     }),
-    // Executes nested query type for requirement coverage
+    // Executes nested query
     gqlRequest({
       domain: session.domain,
       jwt: session.jwt,
@@ -292,8 +293,12 @@ function setLoginError(message) {
   loginError.textContent = message || "";
 }
 
-showPasswordCheckbox.addEventListener("change", () => {
-  passwordInput.type = showPasswordCheckbox.checked ? "text" : "password";
+togglePasswordBtn.addEventListener("click", () => {
+  const isVisible = passwordInput.type === "text";
+  passwordInput.type = isVisible ? "password" : "text";
+  togglePasswordBtn.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+  togglePasswordBtn.setAttribute("title", isVisible ? "Show password" : "Hide password");
+  passwordEye.textContent = isVisible ? "👁" : "🙈";
 });
 
 setupTabs();
