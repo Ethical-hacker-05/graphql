@@ -515,13 +515,19 @@ svg {
 /* Very narrow screens: shrink UI instead of forcing wide layout */
 @media (max-width: 280px) {
   #app {
-    padding: 8px 6px 14px;
+    padding: 8px 0 14px;
+    justify-content: flex-start;
+    align-items: center;
   }
 
   .login-card {
-    width: 100%;
+    width: 260px;
+    max-width: none;
     padding: 10px;
     border-radius: 10px;
+    transform: scale(calc((100vw - 12px) / 260));
+    transform-origin: top center;
+    margin: 8px 0 0;
   }
 
   #login-form {

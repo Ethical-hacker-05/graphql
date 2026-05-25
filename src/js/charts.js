@@ -6,6 +6,21 @@ function axisLabel(x, y, text) {
   return `<text x="${x}" y="${y}" fill="#a7b0cc" font-size="10">${text}</text>`;
 }
 
+function trimTrailingZeros(value) {
+  return value.replace(/\.0+$|(\.\d*[1-9])0+$/, "$1");
+}
+
+export function formatXpValue(value) {
+  const amount = Number(value || 0);
+  if (amount >= 1_000_000) {
+    return `${trimTrailingZeros((amount / 1_000_000).toFixed(2))} MB`;
+  }
+  if (amount >= 1_000) {
+    return `${trimTrailingZeros((amount / 1_000).toFixed(2))} kB`;
+  }
+  return `${amount} B`;
+}
+
 export function renderXpOverTime(container, transactions) {
   if (!transactions.length) {
     container.innerHTML = "<p class='muted'>No XP data found.</p>";
@@ -39,7 +54,7 @@ export function renderXpOverTime(container, transactions) {
     .map((point, index) => {
       const x = pad + (index / Math.max(points.length - 1, 1)) * (width - pad * 2);
       const y = height - pad - (point.value / max) * (height - pad * 2);
-      return `<circle cx="${x}" cy="${y}" r="2.4" fill="#77a8ff"><title>${point.value} XP</title></circle>`;
+      return `<circle cx="${x}" cy="${y}" r="2.4" fill="#77a8ff"><title>${formatXpValue(point.value)}</title></circle>`;
     })
     .join("");
 
@@ -53,8 +68,8 @@ export function renderXpOverTime(container, transactions) {
     <rect x="0" y="0" width="${width}" height="${height}" fill="transparent" />
     <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="#2f3a61"/>
     <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#2f3a61"/>
-    ${axisLabel(6, pad + 4, `${max} XP`)}
-    ${axisLabel(6, height - pad, "0 XP")}
+    ${axisLabel(6, pad + 4, formatXpValue(max))}
+    ${axisLabel(6, height - pad, "0 B")}
     ${axisLabel(width - 86, height - 8, "Time ->")}
     <polygon points="${pad},${height - pad} ${linePoints} ${width - pad},${height - pad}" fill="url(#xpArea)" />
     <polyline points="${linePoints}" fill="none" stroke="#77a8ff" stroke-width="1.5" />
@@ -87,11 +102,11 @@ export function renderAuditRatio(container, givenAudits, receivedAudits) {
   const ratio = receivedAudits ? (givenAudits / receivedAudits).toFixed(1) : "N/A";
 
   const content = `
-    <path d="${givenPath}" fill="#50d890"><title>Given audits: ${givenAudits}</title></path>
-    <path d="${receivedPath}" fill="#ff6b7f"><title>Received audits: ${receivedAudits}</title></path>
+    <path d="${givenPath}" fill="#50d890"><title>Given audits: ${formatXpValue(givenAudits)}</title></path>
+    <path d="${receivedPath}" fill="#ff6b7f"><title>Received audits: ${formatXpValue(receivedAudits)}</title></path>
     <circle cx="${cx}" cy="${cy}" r="26" fill="#161d33"></circle>
-    <text x="${146}" y="${70}" fill="#ecf0ff" font-size="12">Given: ${givenAudits}</text>
-    <text x="${146}" y="${93}" fill="#ecf0ff" font-size="12">Received: ${receivedAudits}</text>
+    <text x="${146}" y="${70}" fill="#ecf0ff" font-size="12">Given: ${formatXpValue(givenAudits)}</text>
+    <text x="${146}" y="${93}" fill="#ecf0ff" font-size="12">Received: ${formatXpValue(receivedAudits)}</text>
     <text x="${146}" y="${116}" fill="#a7b0cc" font-size="11">Audit Ratio: ${ratio}</text>
     <text x="${146}" y="${138}" fill="#a7b0cc" font-size="11">${Math.round((givenAudits / total) * 100)}% share given</text>
   `;
@@ -117,29 +132,41 @@ export function renderXpByProject(container, projectRows) {
   const labelWidth = Math.min(380, Math.max(120, Math.round(longestNameLength * 6.5)));
   const gap = 10;
   const leftPad = labelWidth + gap;
-  const rightPad = 100;
+  const rightPad = 80;
   const max = Math.max(...rows.map((row) => row.xp), 1);
   const rowBlock = barHeight + rowGap;
-  const height = topPad + rows.length * rowBlock + 12;
+  const height = topPad + rows.length * rowBlock + 32; // extra bottom for axis label
   const maxBarWidth = width - leftPad - rightPad;
+
+  // X-axis tick marks (0, 25%, 50%, 75%, 100%)
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => {
+    const fraction = i / tickCount;
+    const xPos = leftPad + fraction * maxBarWidth;
+    const tickValue = fraction * max;
+    return `
+      <line x1="${xPos}" y1="${topPad}" x2="${xPos}" y2="${height - 20}" stroke="#2f3a61" stroke-dasharray="3,3"/>
+      <text x="${xPos}" y="${height - 6}" fill="#a7b0cc" font-size="9" text-anchor="middle">${formatXpValue(tickValue)}</text>
+    `;
+  }).join("");
 
   const bars = rows
     .map((row, index) => {
       const y = topPad + index * rowBlock;
       const barWidth = Math.max(2, (row.xp / max) * maxBarWidth);
-      const valueX = Math.min(leftPad + barWidth + 8, width - rightPad + 8);
+      const valueX = Math.min(leftPad + barWidth + 6, width - rightPad + 6);
       const labelY = y + 14;
       return `
         <text x="8" y="${labelY}" fill="#a7b0cc" font-size="10">
           <title>${row.project}</title>${row.project}
         </text>
         <rect x="${leftPad}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6" fill="#77a8ff">
-          <title>${row.project}: ${row.xp} XP</title>
+          <title>${row.project}: ${formatXpValue(row.xp)}</title>
         </rect>
-        <text x="${valueX}" y="${y + 14}" fill="#ecf0ff" font-size="10">${row.xp} XP</text>
+        <text x="${valueX}" y="${y + 14}" fill="#ecf0ff" font-size="10">${formatXpValue(row.xp)}</text>
       `;
     })
     .join("");
 
-  container.innerHTML = createSvg(width, height, bars);
+  container.innerHTML = createSvg(width, height, ticks + bars);
 }

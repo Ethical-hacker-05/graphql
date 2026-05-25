@@ -1,5 +1,5 @@
 import { clearSession, getSession, gqlRequest, saveSession, signIn } from "./api.js";
-import { renderAuditRatio, renderXpByProject, renderXpOverTime } from "./charts.js";
+import { formatXpValue, renderAuditRatio, renderXpByProject, renderXpOverTime } from "./charts.js";
 
 const loginView = document.getElementById("login-view");
 const profileView = document.getElementById("profile-view");
@@ -63,7 +63,7 @@ const QUERIES = {
       }
     }
   `,
-  // Keep nested query
+  // Nested query
   auditByUserNested: `
     query AuditByUserNested($userId: Int!) {
       user(where: { id: { _eq: $userId } }) {
@@ -84,8 +84,42 @@ const QUERIES = {
   `,
 };
 
-function formatXp(value) {
-  return `${Number(value || 0).toLocaleString()} XP`;
+/**
+ * Returns true if the transaction path belongs to the main profile curriculum.
+ * Excludes nested piscine exercises/checkpoints, but keeps the top-level
+ * `piscine-js` and `piscine-rust` selection pool entries.
+ */
+function isProfileTransaction(tx) {
+  const path = tx.path || "";
+  if (!path.includes("/piscine-")) {
+    return true;
+  }
+
+  if (/\/piscine-(js|rust)$/.test(path)) {
+    return true;
+  }
+
+  return !/\/piscine-[^/]+\/.+/.test(path);
+}
+
+/**
+ * Derive a human-readable activity type label from a transaction.
+ * Returns "Project" or "Exercise".
+ */
+function activityType(tx) {
+  if (tx.object?.type) {
+    return tx.object.type === "exercise" ? "Exercise" : "Project";
+  }
+  // Fall back to path heuristic
+  return tx.path.includes("/exercise") ? "Exercise" : "Project";
+}
+
+/**
+ * Derive a human-readable activity name from a transaction.
+ */
+function activityName(tx) {
+  if (tx.object?.name) return tx.object.name;
+  return tx.path.split("/").filter(Boolean).at(-1) || "unknown";
 }
 
 function parseEmail(attrs) {
@@ -145,17 +179,33 @@ function renderBasicUser(user, fullName) {
 }
 
 function renderXpSection(transactions) {
-  const total = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-  totalXp.textContent = formatXp(total);
+  // Filter to profile-level transactions only (no piscine paths)
+  const profileTransactions = transactions.filter(isProfileTransaction);
 
-  const projectOnlyTransactions = transactions.filter((tx) => {
-    if (tx.object?.type) return tx.object.type === "project";
-    return !tx.path.includes("/exercise/");
-  });
+  // Total XP from profile activities, formatted as kB / MB
+  const total = profileTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+  totalXp.textContent = formatXpValue(total);
 
-  const groupedByProject = projectOnlyTransactions.reduce((acc, tx) => {
-    const project =
-      tx.object?.name || tx.path.split("/").filter(Boolean).at(-1) || "unknown-project";
+  // XP history — most recent first, labelled as "Project - name" or "Exercise - name"
+  const historyRows = [...profileTransactions]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((tx) => {
+      const type = activityType(tx);
+      const name = activityName(tx);
+      const label = `${type} - ${name}`;
+      const date = new Date(tx.createdAt).toLocaleDateString();
+      return `<div class="table-row"><span>${label}</span><strong>${formatXpValue(tx.amount)} · ${date}</strong></div>`;
+    });
+
+  xpHistory.innerHTML = historyRows.length
+    ? historyRows.join("")
+    : "<p class='muted'>No XP history found.</p>";
+
+  // Build graph data from profile project transactions only
+  const projectOnly = profileTransactions.filter((tx) => activityType(tx) === "Project");
+
+  const groupedByProject = projectOnly.reduce((acc, tx) => {
+    const project = activityName(tx);
     const createdAt = new Date(tx.createdAt).getTime();
     const current = acc[project];
     if (!current) {
@@ -167,21 +217,14 @@ function renderXpSection(transactions) {
     return acc;
   }, {});
 
-  const historyRows = [...transactions]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map((tx) => {
-      const date = new Date(tx.createdAt).toLocaleDateString();
-      return `<div class="table-row"><span>${tx.path}</span><strong>${formatXp(tx.amount)} · ${date}</strong></div>`;
-    });
-
-  xpHistory.innerHTML = historyRows.length
-    ? historyRows.join("")
-    : "<p class='muted'>No XP history found.</p>";
-
   const projectGraphData = Object.entries(groupedByProject)
     .map(([project, info]) => ({ project, xp: info.xp, submittedAt: info.submittedAt }))
     .sort((a, b) => b.submittedAt - a.submittedAt);
+
   renderXpByProject(xpProjectChart, projectGraphData);
+
+  // XP-over-time graph also uses profile transactions only
+  renderXpOverTime(xpTimeChart, profileTransactions);
 }
 
 function renderSkillsSection(skills) {
@@ -259,7 +302,7 @@ async function loadProfile(session) {
       query: QUERIES.auditTransactions,
       variables: { userId: me.id },
     }),
-    // Executes nested query
+    // Executes nested query (result discarded; kept to satisfy project requirement)
     gqlRequest({
       domain: session.domain,
       jwt: session.jwt,
@@ -271,10 +314,10 @@ async function loadProfile(session) {
   const fullName = parseFullName(me);
   welcome.textContent = `Welcome, ${fullName}`;
   renderBasicUser(me, fullName);
+  // renderXpSection now handles both XP history AND the two XP graphs
   renderXpSection(xpData.transaction || []);
   renderSkillsSection(skillData.transaction || []);
   renderAuditGraph(auditData.transaction || []);
-  renderXpOverTime(xpTimeChart, xpData.transaction || []);
 }
 
 function showLogin() {
