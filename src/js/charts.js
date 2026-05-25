@@ -21,7 +21,7 @@ export function formatXpValue(value) {
   return `${amount} B`;
 }
 
-export function renderXpOverTime(container, transactions) {
+export function renderXpOverTime(container, transactions, totalLabel = null) {
   if (!transactions.length) {
     container.innerHTML = "<p class='muted'>No XP data found.</p>";
     return;
@@ -68,7 +68,7 @@ export function renderXpOverTime(container, transactions) {
     <rect x="0" y="0" width="${width}" height="${height}" fill="transparent" />
     <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="#2f3a61"/>
     <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#2f3a61"/>
-    ${axisLabel(6, pad + 4, formatXpValue(max))}
+    ${axisLabel(6, pad + 4, totalLabel || formatXpValue(max))}
     ${axisLabel(6, height - pad, "0 B")}
     ${axisLabel(width - 86, height - 8, "Time ->")}
     <polygon points="${pad},${height - pad} ${linePoints} ${width - pad},${height - pad}" fill="url(#xpArea)" />

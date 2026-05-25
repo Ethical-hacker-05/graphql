@@ -86,20 +86,25 @@ const QUERIES = {
 
 /**
  * Returns true if the transaction path belongs to the main profile curriculum.
- * Excludes nested piscine exercises/checkpoints, but keeps the top-level
- * `piscine-js` and `piscine-rust` selection pool entries.
+ * Excludes:
+ *  - piscine sub-exercises (anything inside /piscine-X/...)
+ *  - anything nested deeper than one segment after the module root
+ * Exception: /bh-module/checkpoint/<exercise> paths are always kept.
  */
 function isProfileTransaction(tx) {
   const path = tx.path || "";
-  if (!path.includes("/piscine-")) {
-    return true;
-  }
 
-  if (/\/piscine-(js|rust)$/.test(path)) {
-    return true;
-  }
+  // Always keep checkpoint exam submissions (e.g. /bahrain/bh-module/checkpoint/fifthandskip)
+  if (/\/bh-module\/checkpoint\/.+/.test(path)) return true;
 
-  return !/\/piscine-[^/]+\/.+/.test(path);
+  // Drop anything inside a piscine sub-folder (e.g. /piscine-js/some-exercise)
+  if (/\/piscine-[^/]+\/.+/.test(path)) return false;
+
+  // Keep only top-level module paths: /<campus>/<module>/<project-slug> (3 segments)
+  const segments = path.replace(/^\//, "").split("/");
+  if (segments.length > 3) return false;
+
+  return true;
 }
 
 /**
@@ -184,7 +189,7 @@ function renderXpSection(transactions) {
 
   // Total XP from profile activities, formatted as kB / MB
   const total = profileTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-  totalXp.textContent = formatXpValue(total);
+  totalXp.textContent = `${Math.round(total / 1_000)} kB`;
 
   // XP history — most recent first, labelled as "Project - name" or "Exercise - name"
   const historyRows = [...profileTransactions]
@@ -224,7 +229,7 @@ function renderXpSection(transactions) {
   renderXpByProject(xpProjectChart, projectGraphData);
 
   // XP-over-time graph also uses profile transactions only
-  renderXpOverTime(xpTimeChart, profileTransactions);
+  renderXpOverTime(xpTimeChart, profileTransactions, totalXp.textContent);
 }
 
 function renderSkillsSection(skills) {
