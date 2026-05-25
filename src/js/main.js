@@ -84,13 +84,7 @@ const QUERIES = {
   `,
 };
 
-/**
- * Returns true if the transaction path belongs to the main profile curriculum.
- * Excludes:
- *  - piscine sub-exercises (anything inside /piscine-X/...)
- *  - anything nested deeper than one segment after the module root
- * Exception: /bh-module/checkpoint/<exercise> paths are always kept.
- */
+
 function isProfileTransaction(tx) {
   const path = tx.path || "";
 
@@ -107,10 +101,7 @@ function isProfileTransaction(tx) {
   return true;
 }
 
-/**
- * Derive a human-readable activity type label from a transaction.
- * Returns "Project" or "Exercise".
- */
+
 function activityType(tx) {
   if (tx.object?.type) {
     return tx.object.type === "exercise" ? "Exercise" : "Project";
@@ -119,9 +110,7 @@ function activityType(tx) {
   return tx.path.includes("/exercise") ? "Exercise" : "Project";
 }
 
-/**
- * Derive a human-readable activity name from a transaction.
- */
+
 function activityName(tx) {
   if (tx.object?.name) return tx.object.name;
   return tx.path.split("/").filter(Boolean).at(-1) || "unknown";
