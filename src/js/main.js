@@ -1,27 +1,9 @@
 import { clearSession, getSession, gqlRequest, saveSession, signIn } from "./api.js";
 import { formatXpValue, renderAuditRatio, renderXpByProject, renderXpOverTime } from "./charts.js";
 
-const loginView = document.getElementById("login-view");
-const profileView = document.getElementById("profile-view");
 const appRoot = document.getElementById("app");
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const logoutBtn = document.getElementById("logout-btn");
-const refreshBtn = document.getElementById("refresh-btn");
-const passwordInput = document.getElementById("password");
-const togglePasswordBtn = document.getElementById("toggle-password");
-const passwordEye = document.getElementById("password-eye");
-
-const welcome = document.getElementById("welcome");
-const basicInfo = document.getElementById("basic-info");
-const totalXp = document.getElementById("total-xp");
-const xpHistory = document.getElementById("xp-history");
-const skillsSummary = document.getElementById("skills-summary");
-const xpTimeChart = document.getElementById("xp-time-chart");
-const auditRatioChart = document.getElementById("audit-ratio-chart");
-const xpProjectChart = document.getElementById("xp-project-chart");
-const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
-const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+const loginTemplate = document.getElementById("login-template");
+const profileTemplate = document.getElementById("profile-template");
 
 const ROUTES = {
   login: "login",
@@ -29,6 +11,27 @@ const ROUTES = {
 };
 
 let syncingHash = false;
+let loginMounted = false;
+let profileMounted = false;
+let loginAbort = null;
+let profileAbort = null;
+
+let loginForm = null;
+let loginError = null;
+let passwordInput = null;
+let togglePasswordBtn = null;
+let passwordEye = null;
+
+let welcome = null;
+let basicInfo = null;
+let totalXp = null;
+let xpHistory = null;
+let skillsSummary = null;
+let xpTimeChart = null;
+let auditRatioChart = null;
+let xpProjectChart = null;
+let tabButtons = [];
+let tabPanels = [];
 
 const QUERIES = {
   // Normal query
@@ -269,10 +272,97 @@ function activateTab(targetId) {
   });
 }
 
-function setupTabs() {
+function setupTabs(signal) {
   tabButtons.forEach((button) => {
-    button.addEventListener("click", () => activateTab(button.dataset.tab));
+    button.addEventListener("click", () => activateTab(button.dataset.tab), { signal });
   });
+}
+
+function unmountLogin() {
+  if (!loginMounted) return;
+  loginAbort?.abort();
+  loginAbort = null;
+  appRoot.querySelector("#login-view")?.remove();
+  loginMounted = false;
+  loginForm = null;
+  loginError = null;
+  passwordInput = null;
+  togglePasswordBtn = null;
+  passwordEye = null;
+}
+
+function mountLogin() {
+  if (loginMounted) return;
+  unmountProfile();
+  appRoot.appendChild(loginTemplate.content.cloneNode(true));
+  loginMounted = true;
+
+  loginForm = document.getElementById("login-form");
+  loginError = document.getElementById("login-error");
+  passwordInput = document.getElementById("password");
+  togglePasswordBtn = document.getElementById("toggle-password");
+  passwordEye = document.getElementById("password-eye");
+
+  loginAbort = new AbortController();
+  const { signal } = loginAbort;
+
+  togglePasswordBtn.addEventListener(
+    "click",
+    () => {
+      const isVisible = passwordInput.type === "text";
+      passwordInput.type = isVisible ? "password" : "text";
+      togglePasswordBtn.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+      togglePasswordBtn.setAttribute("title", isVisible ? "Show password" : "Hide password");
+      passwordEye.textContent = isVisible ? "👁" : "🙈";
+    },
+    { signal },
+  );
+
+  loginForm.addEventListener("submit", handleLoginSubmit, { signal });
+}
+
+function unmountProfile() {
+  if (!profileMounted) return;
+  profileAbort?.abort();
+  profileAbort = null;
+  appRoot.querySelector("#profile-view")?.remove();
+  profileMounted = false;
+  welcome = null;
+  basicInfo = null;
+  totalXp = null;
+  xpHistory = null;
+  skillsSummary = null;
+  xpTimeChart = null;
+  auditRatioChart = null;
+  xpProjectChart = null;
+  tabButtons = [];
+  tabPanels = [];
+}
+
+function mountProfile() {
+  if (profileMounted) return;
+  if (!isAuthenticated()) return;
+  unmountLogin();
+  appRoot.appendChild(profileTemplate.content.cloneNode(true));
+  profileMounted = true;
+
+  welcome = document.getElementById("welcome");
+  basicInfo = document.getElementById("basic-info");
+  totalXp = document.getElementById("total-xp");
+  xpHistory = document.getElementById("xp-history");
+  skillsSummary = document.getElementById("skills-summary");
+  xpTimeChart = document.getElementById("xp-time-chart");
+  auditRatioChart = document.getElementById("audit-ratio-chart");
+  xpProjectChart = document.getElementById("xp-project-chart");
+  tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+  tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+
+  profileAbort = new AbortController();
+  const { signal } = profileAbort;
+
+  setupTabs(signal);
+  document.getElementById("logout-btn").addEventListener("click", handleLogout, { signal });
+  document.getElementById("refresh-btn").addEventListener("click", handleRefresh, { signal });
 }
 
 function isAuthenticated() {
@@ -298,10 +388,12 @@ function setHash(route, replace = false) {
 function applyView(route) {
   const showProfileView = route === ROUTES.profile;
   appRoot.classList.toggle("dashboard-mode", showProfileView);
-  loginView.classList.toggle("hidden", showProfileView);
-  profileView.classList.toggle("hidden", !showProfileView);
-  loginView.setAttribute("aria-hidden", String(showProfileView));
-  profileView.setAttribute("aria-hidden", String(!showProfileView));
+
+  if (showProfileView) {
+    mountProfile();
+  } else {
+    mountLogin();
+  }
 }
 
 function navigate(route, { replace = false, skipHash = false } = {}) {
@@ -323,7 +415,7 @@ function navigate(route, { replace = false, skipHash = false } = {}) {
 }
 
 async function loadProfile(session) {
-  if (!session?.jwt || !session?.domain) {
+  if (!session?.jwt || !session?.domain || !profileMounted) {
     throw new Error("Not authenticated.");
   }
 
@@ -373,20 +465,10 @@ async function loadProfile(session) {
 }
 
 function setLoginError(message) {
-  loginError.textContent = message || "";
+  if (loginError) loginError.textContent = message || "";
 }
 
-togglePasswordBtn.addEventListener("click", () => {
-  const isVisible = passwordInput.type === "text";
-  passwordInput.type = isVisible ? "password" : "text";
-  togglePasswordBtn.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
-  togglePasswordBtn.setAttribute("title", isVisible ? "Show password" : "Hide password");
-  passwordEye.textContent = isVisible ? "👁" : "🙈";
-});
-
-setupTabs();
-
-loginForm.addEventListener("submit", async (event) => {
+async function handleLoginSubmit(event) {
   event.preventDefault();
   setLoginError("");
 
@@ -408,28 +490,30 @@ loginForm.addEventListener("submit", async (event) => {
     const jwt = await signIn({ domain, identifier, password });
     const session = { domain, jwt };
     saveSession(session);
-    await loadProfile(session);
     navigate(ROUTES.profile);
+    await loadProfile(session);
   } catch (error) {
     const fallback =
       "Login failed. Check credentials and domain, then try again (example domain: learn.reboot01.com).";
-    setLoginError(error.message || fallback);
     clearSession();
+    navigate(ROUTES.login, { replace: true });
+    setLoginError(error.message || fallback);
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Sign in";
   }
-});
+}
 
-logoutBtn.addEventListener("click", () => {
+function handleLogout() {
   clearSession();
   navigate(ROUTES.login, { replace: true });
-});
+}
 
-refreshBtn.addEventListener("click", async () => {
+async function handleRefresh() {
   const session = getSession();
-  if (!session) return;
+  if (!session || !profileMounted) return;
 
+  const refreshBtn = document.getElementById("refresh-btn");
   refreshBtn.disabled = true;
   refreshBtn.textContent = "Refreshing...";
   try {
@@ -438,10 +522,12 @@ refreshBtn.addEventListener("click", async () => {
     clearSession();
     navigate(ROUTES.login, { replace: true });
   } finally {
-    refreshBtn.disabled = false;
-    refreshBtn.textContent = "Refresh Data";
+    if (profileMounted && refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "Refresh Data";
+    }
   }
-});
+}
 
 window.addEventListener("hashchange", () => {
   if (syncingHash) return;
