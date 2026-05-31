@@ -23,6 +23,13 @@ const xpProjectChart = document.getElementById("xp-project-chart");
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
+const ROUTES = {
+  login: "login",
+  profile: "profile",
+};
+
+let syncingHash = false;
+
 const QUERIES = {
   // Normal query
   me: `
@@ -268,7 +275,58 @@ function setupTabs() {
   });
 }
 
+function isAuthenticated() {
+  const session = getSession();
+  return Boolean(session?.jwt && session?.domain);
+}
+
+function parseRouteFromHash() {
+  const raw = location.hash.replace(/^#\/?/, "").toLowerCase();
+  return raw === ROUTES.profile ? ROUTES.profile : ROUTES.login;
+}
+
+function setHash(route, replace = false) {
+  const next = `#${route}`;
+  if (location.hash === next) return;
+  if (replace) {
+    history.replaceState(null, "", next);
+  } else {
+    location.hash = route;
+  }
+}
+
+function applyView(route) {
+  const showProfileView = route === ROUTES.profile;
+  appRoot.classList.toggle("dashboard-mode", showProfileView);
+  loginView.classList.toggle("hidden", showProfileView);
+  profileView.classList.toggle("hidden", !showProfileView);
+  loginView.setAttribute("aria-hidden", String(showProfileView));
+  profileView.setAttribute("aria-hidden", String(!showProfileView));
+}
+
+function navigate(route, { replace = false, skipHash = false } = {}) {
+  if (route === ROUTES.profile && !isAuthenticated()) {
+    route = ROUTES.login;
+  } else if (route === ROUTES.login && isAuthenticated()) {
+    route = ROUTES.profile;
+  }
+
+  applyView(route);
+
+  if (!skipHash) {
+    syncingHash = true;
+    setHash(route, replace);
+    syncingHash = false;
+  }
+
+  return route;
+}
+
 async function loadProfile(session) {
+  if (!session?.jwt || !session?.domain) {
+    throw new Error("Not authenticated.");
+  }
+
   const meData = await gqlRequest({
     domain: session.domain,
     jwt: session.jwt,
@@ -314,18 +372,6 @@ async function loadProfile(session) {
   renderAuditGraph(auditData.transaction || []);
 }
 
-function showLogin() {
-  appRoot.classList.remove("dashboard-mode");
-  loginView.classList.remove("hidden");
-  profileView.classList.add("hidden");
-}
-
-function showProfile() {
-  appRoot.classList.add("dashboard-mode");
-  loginView.classList.add("hidden");
-  profileView.classList.remove("hidden");
-}
-
 function setLoginError(message) {
   loginError.textContent = message || "";
 }
@@ -363,7 +409,7 @@ loginForm.addEventListener("submit", async (event) => {
     const session = { domain, jwt };
     saveSession(session);
     await loadProfile(session);
-    showProfile();
+    navigate(ROUTES.profile);
   } catch (error) {
     const fallback =
       "Login failed. Check credentials and domain, then try again (example domain: learn.reboot01.com).";
@@ -377,7 +423,7 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutBtn.addEventListener("click", () => {
   clearSession();
-  showLogin();
+  navigate(ROUTES.login, { replace: true });
 });
 
 refreshBtn.addEventListener("click", async () => {
@@ -390,26 +436,37 @@ refreshBtn.addEventListener("click", async () => {
     await loadProfile(session);
   } catch {
     clearSession();
-    showLogin();
+    navigate(ROUTES.login, { replace: true });
   } finally {
     refreshBtn.disabled = false;
     refreshBtn.textContent = "Refresh Data";
   }
 });
 
+window.addEventListener("hashchange", () => {
+  if (syncingHash) return;
+  navigate(parseRouteFromHash());
+});
+
 async function bootstrap() {
-  const session = getSession();
-  if (!session) {
-    showLogin();
+  const requestedRoute = parseRouteFromHash();
+
+  if (!isAuthenticated()) {
+    navigate(ROUTES.login, { replace: true });
+    return;
+  }
+
+  const route = navigate(requestedRoute, { replace: requestedRoute !== ROUTES.profile });
+
+  if (route !== ROUTES.profile) {
     return;
   }
 
   try {
-    await loadProfile(session);
-    showProfile();
+    await loadProfile(getSession());
   } catch {
     clearSession();
-    showLogin();
+    navigate(ROUTES.login, { replace: true });
   }
 }
 
