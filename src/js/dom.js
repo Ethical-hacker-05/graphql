@@ -1,0 +1,144 @@
+export const appRoot = document.getElementById("app");
+
+function buildLoginView() {
+  const root = document.createElement("div");
+  root.innerHTML = `
+      <section id="login-view" class="card login-card">
+        <h1>GraphQL</h1>
+        <p class="muted">
+          Sign in with <strong>username:password</strong> or
+          <strong>email:password</strong>
+        </p>
+        <form id="login-form" novalidate>
+          <label for="identifier">Username or Email</label>
+          <input id="identifier" name="identifier" type="text" autocomplete="username" required />
+
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+            <button
+              id="toggle-password"
+              type="button"
+              class="icon-btn"
+              aria-label="Show password"
+              title="Show password"
+            >
+              <span id="password-eye" aria-hidden="true">👁</span>
+            </button>
+          </div>
+
+          <p class="fixed-domain muted">
+            Domain: <strong>learn.reboot01.com</strong>
+          </p>
+          <input id="domain" name="domain" type="hidden" value="learn.reboot01.com" />
+
+          <div class="signin-wrap">
+            <button type="submit">Sign in</button>
+          </div>
+          <p id="login-error" class="error" aria-live="polite"></p>
+        </form>
+      </section>
+  `;
+  return root.firstElementChild;
+}
+
+function buildProfileView() {
+  const root = document.createElement("div");
+  root.innerHTML = `
+      <section id="profile-view">
+        <header class="topbar card">
+          <div>
+            <h2 id="welcome">Welcome</h2>
+            <p class="muted">Your journey and achievements overview</p>
+          </div>
+          <div class="top-actions">
+            <button id="refresh-btn" class="secondary">Refresh Data</button>
+            <button id="logout-btn" class="secondary">Logout</button>
+          </div>
+        </header>
+
+        <main class="grid">
+          <section class="card tabs-card span-2">
+            <div class="tab-buttons" role="tablist" aria-label="Profile data tabs">
+              <button class="tab-btn active" data-tab="user-tab" role="tab" aria-selected="true">
+                User Information
+              </button>
+              <button class="tab-btn" data-tab="xp-tab" role="tab" aria-selected="false">XP Amount</button>
+              <button class="tab-btn" data-tab="skills-tab" role="tab" aria-selected="false">Skills</button>
+            </div>
+
+            <article id="user-tab" class="tab-panel active" role="tabpanel">
+              <h3>User Information</h3>
+              <div id="basic-info" class="kv-list"></div>
+            </article>
+
+            <article id="xp-tab" class="tab-panel" role="tabpanel">
+              <h3>XP Amount</h3>
+              <p id="total-xp" class="big-number">0</p>
+              <div id="xp-history" class="table-like"></div>
+            </article>
+
+            <article id="skills-tab" class="tab-panel" role="tabpanel">
+              <h3>Skills</h3>
+              <div id="skills-summary" class="kv-list"></div>
+            </article>
+          </section>
+
+          <article class="card span-2">
+            <h3>Statistics</h3>
+            <p class="muted">SVG graph 1: XP earned over time</p>
+            <div id="xp-time-chart" class="chart"></div>
+            <p class="muted">SVG graph 2: Audit ratio (given vs received)</p>
+            <div id="audit-ratio-chart" class="chart"></div>
+            <p class="muted">SVG graph 3 (bonus): Top project XP</p>
+            <div id="xp-project-chart" class="chart"></div>
+          </article>
+        </main>
+      </section>
+  `;
+  return root.firstElementChild;
+}
+
+const loginView = buildLoginView();
+const profileView = buildProfileView();
+
+let activeView = null;
+
+export function isLoginActive() {
+  return activeView === loginView;
+}
+
+export function isProfileActive() {
+  return activeView === profileView;
+}
+
+export function showLogin() {
+  if (activeView === loginView) return loginView;
+
+  if (activeView) {
+    activeView.replaceWith(loginView);
+  } else {
+    appRoot.appendChild(loginView);
+  }
+
+  activeView = loginView;
+  return loginView;
+}
+
+export function showProfile() {
+  if (activeView === profileView) return profileView;
+
+  if (activeView) {
+    activeView.replaceWith(profileView);
+  } else {
+    appRoot.appendChild(profileView);
+  }
+
+  activeView = profileView;
+  return profileView;
+}
+
+export function removeActiveView() {
+  activeView?.remove();
+  activeView = null;
+}

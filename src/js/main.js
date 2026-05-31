@@ -1,9 +1,6 @@
 import { clearSession, getSession, gqlRequest, saveSession, signIn } from "./api.js";
 import { formatXpValue, renderAuditRatio, renderXpByProject, renderXpOverTime } from "./charts.js";
-
-const appRoot = document.getElementById("app");
-const loginTemplate = document.getElementById("login-template");
-const profileTemplate = document.getElementById("profile-template");
+import { appRoot, isLoginActive, isProfileActive, showLogin, showProfile } from "./dom.js";
 
 const ROUTES = {
   login: "login",
@@ -11,8 +8,6 @@ const ROUTES = {
 };
 
 let syncingHash = false;
-let loginMounted = false;
-let profileMounted = false;
 let loginAbort = null;
 let profileAbort = null;
 
@@ -278,24 +273,13 @@ function setupTabs(signal) {
   });
 }
 
-function unmountLogin() {
-  if (!loginMounted) return;
-  loginAbort?.abort();
-  loginAbort = null;
-  appRoot.querySelector("#login-view")?.remove();
-  loginMounted = false;
-  loginForm = null;
-  loginError = null;
-  passwordInput = null;
-  togglePasswordBtn = null;
-  passwordEye = null;
-}
-
 function mountLogin() {
-  if (loginMounted) return;
-  unmountProfile();
-  appRoot.appendChild(loginTemplate.content.cloneNode(true));
-  loginMounted = true;
+  if (isLoginActive()) return;
+
+  profileAbort?.abort();
+  profileAbort = null;
+
+  showLogin();
 
   loginForm = document.getElementById("login-form");
   loginError = document.getElementById("login-error");
@@ -303,6 +287,7 @@ function mountLogin() {
   togglePasswordBtn = document.getElementById("toggle-password");
   passwordEye = document.getElementById("password-eye");
 
+  loginAbort?.abort();
   loginAbort = new AbortController();
   const { signal } = loginAbort;
 
@@ -319,14 +304,7 @@ function mountLogin() {
   );
 
   loginForm.addEventListener("submit", handleLoginSubmit, { signal });
-}
 
-function unmountProfile() {
-  if (!profileMounted) return;
-  profileAbort?.abort();
-  profileAbort = null;
-  appRoot.querySelector("#profile-view")?.remove();
-  profileMounted = false;
   welcome = null;
   basicInfo = null;
   totalXp = null;
@@ -340,11 +318,18 @@ function unmountProfile() {
 }
 
 function mountProfile() {
-  if (profileMounted) return;
+  if (isProfileActive()) return;
   if (!isAuthenticated()) return;
-  unmountLogin();
-  appRoot.appendChild(profileTemplate.content.cloneNode(true));
-  profileMounted = true;
+
+  loginAbort?.abort();
+  loginAbort = null;
+  loginForm = null;
+  loginError = null;
+  passwordInput = null;
+  togglePasswordBtn = null;
+  passwordEye = null;
+
+  showProfile();
 
   welcome = document.getElementById("welcome");
   basicInfo = document.getElementById("basic-info");
@@ -357,6 +342,7 @@ function mountProfile() {
   tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
   tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
+  profileAbort?.abort();
   profileAbort = new AbortController();
   const { signal } = profileAbort;
 
@@ -415,7 +401,7 @@ function navigate(route, { replace = false, skipHash = false } = {}) {
 }
 
 async function loadProfile(session) {
-  if (!session?.jwt || !session?.domain || !profileMounted) {
+  if (!session?.jwt || !session?.domain || !isProfileActive()) {
     throw new Error("Not authenticated.");
   }
 
@@ -511,7 +497,7 @@ function handleLogout() {
 
 async function handleRefresh() {
   const session = getSession();
-  if (!session || !profileMounted) return;
+  if (!session || !isProfileActive()) return;
 
   const refreshBtn = document.getElementById("refresh-btn");
   refreshBtn.disabled = true;
@@ -522,7 +508,7 @@ async function handleRefresh() {
     clearSession();
     navigate(ROUTES.login, { replace: true });
   } finally {
-    if (profileMounted && refreshBtn) {
+    if (isProfileActive() && refreshBtn) {
       refreshBtn.disabled = false;
       refreshBtn.textContent = "Refresh Data";
     }
